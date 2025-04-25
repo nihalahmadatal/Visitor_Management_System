@@ -1,0 +1,96 @@
+﻿@model Visitor_Management_System.Models.TblVisitor
+@{
+    Layout = null;
+    string passColor = Model.Status == "CheckedIn" ? "green" : Model.Status == "CheckedOut" ? "red" : "orange";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Show Visitor Pass</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f7f7f7;
+        }
+
+        .pass {
+            border: 3px solid @passColor;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: white;
+            max-width: 400px;
+            margin: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .photo {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .status-label {
+            font-weight: bold;
+            color: @passColor;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .btn-checkin { background-color: green; }
+        .btn-checkout { background-color: red; }
+
+        .qr-code {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pass">
+        <h2>Visitor Pass</h2>
+        <img src="@Model.PhotoPath" class="photo" alt="Visitor Photo" />
+        <p><strong>Name:</strong> @Model.Name</p>
+        <p><strong>Status:</strong> <span class="status-label">@Model.Status</span></p>
+        <p><strong>Purpose:</strong> @Model.Purpose</p>
+        <p><strong>Visit Time:</strong> @Model.CreatedAt</p>
+
+        <div class="qr-code">
+            <img src="@Url.Action("GenerateQr", "Visitor", new { token = Model.QRCodeToken })" width="200" />
+        </div>
+    </div>
+
+    @if (User.Identity.IsAuthenticated && Session["SecurityUser"] != null)
+    {
+        <div style="max-width: 400px; margin: 20px auto; text-align: center;">
+            @if (Model.Status == "Pending")
+            {
+                <form method="post" action="@Url.Action("CheckIn", "Security", new { id = Model.Id })">
+                    <button type="submit" class="btn btn-checkin">✅ Check-In & Approve</button>
+                </form>
+            }
+            else if (Model.Status == "CheckedIn")
+            {
+                <form method="post" action="@Url.Action("CheckOut", "Security", new { id = Model.Id })">
+                    <button type="submit" class="btn btn-checkout">🚪 Check-Out</button>
+                </form>
+            }
+        </div>
+    }
+</body>
+</html>

@@ -1,0 +1,41 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Scan QR via Camera</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        #reader {
+            width: 350px;
+            margin: auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body class="text-center">
+    <h2>Scan Visitor QR Code</h2>
+    <div id="reader"></div>
+
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Code scanned = ${decodedText}`);
+            window.location.href = decodedText; // Redirect to scanned URL
+        }
+
+        function onScanFailure(error) {
+            // console.warn(`Scan error: ${error}`);
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 250 });
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html>
