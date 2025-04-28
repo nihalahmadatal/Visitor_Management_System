@@ -166,6 +166,10 @@
     <Content Include="Views\Security\Register.cshtml" />
     <Content Include="Views\Visitor\VisitorPass.cshtml" />
     <Content Include="Views\Security\ShowVisitorPass.cshtml" />
+    <Content Include="Views\Security\VisitorPassWithActions.cshtml" />
+    <Content Include="Views\Security\VisitorList.cshtml" />
+    <Content Include="Views\Visitor\ShowRegisterQR.cshtml" />
+    <Content Include="Views\Security\DeleteVisitor.cshtml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
