@@ -1,0 +1,94 @@
+@model Visitor_Management_System.Models.TblVisitor
+@{
+    ViewBag.Title = "Visitor Pass";
+    Layout = null;
+
+    string statusColor = Model?.Status == "CheckedIn" ? "green" :
+                         Model?.Status == "CheckedOut" ? "red" : "orange"; // orange = Pending
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visitor Pass</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            padding: 20px;
+        }
+        .pass {
+            border: 3px solid @statusColor;
+            padding: 20px;
+            max-width: 400px;
+            margin: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .photo {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin: 10px;
+            border: 2px solid #ccc;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+        }
+        .btn-checkin { background-color: green; }
+        .btn-checkout { background-color: orange; }
+        .btn-complete { background-color: red; }
+    </style>
+</head>
+<body>
+    @if (Model != null)
+    {
+        <div class="pass">
+            <h2>Visitor Pass</h2>
+            <img src="@Model.PhotoPath" class="photo" alt="Photo" />
+            <p><strong>Name:</strong> @Model.Name</p>
+            <p><strong>Email:</strong> @Model.Email</p>
+            <p><strong>Phone:</strong> @Model.Phone</p>
+            <p><strong>Status:</strong> @Model.Status</p>
+            <p><strong>Visit Time:</strong> @Model.CreatedAt</p>
+
+            <p><strong>QR Code Path:</strong> @Model.QRCodeToken</p>
+
+            <!-- Action Buttons -->
+            @if (Model.Status == "Pending")
+            {
+                <form method="post" action="@Url.Action("CheckIn", "Security", new { id = Model.Id })">
+                    <button type="submit" class="btn btn-checkin">✅ Check-In</button>
+                </form>
+            }
+            else if (Model.Status == "CheckedIn")
+            {
+                <form method="post" action="@Url.Action("CheckOut", "Security", new { id = Model.Id })">
+                    <button type="submit" class="btn btn-checkout">🚪 Check-Out</button>
+                </form>
+            }
+            else if (Model.Status == "CheckedOut")
+            {
+                <form method="post" action="@Url.Action("VisitorComplete", "Security", new { id = Model.Id })">
+                    <button type="submit" class="btn btn-complete">✔️ Visitor Complete</button>
+                </form>
+            }
+        </div>
+    }
+    else
+    {
+        <h3 style="text-align:center;">@ViewBag.Message</h3>
+    }
+</body>
+</html>
