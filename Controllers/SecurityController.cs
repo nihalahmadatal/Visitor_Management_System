@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
@@ -60,41 +60,41 @@ namespace Visitor_Management_System.Controllers
             string hashedInput = PasswordHelper.HashPassword(password);
 
             var user = dbo.TblLogins.FirstOrDefault(u => u.Username == username && u.Password == hashedInput);
-
-            if (user != null && user.Role == "Security")
+            if (user != null)
             {
                 Session["SecurityUser"] = user.Username;
-                return RedirectToAction("ShowVisitorPass", "Security");
+                return RedirectToAction("LatestVisitor", "Security");
             }
-            ViewBag.Error = "Invalid Username or Password";
-            return View();
+            else
+            {
+                ViewBag.Message = "Invalid login. Please try again.";
+                return View();
+            }
         }
         public ActionResult Dashboard()
         {
-            if (Session["SecurityUser"] == null)
-                return RedirectToAction("Login");
+            var visitors = dbo.TblVisitors
+                              .Where(v => v.Status == "Completed" || v.Status == "CheckedOut") // Show only completed or checked out
+                              .OrderByDescending(v => v.UpdatedAt) // Optional: Latest completed first
+                              .ToList();
 
-            ViewBag.Username = Session["SecurityUser"];
-            return View();
+            ViewBag.SecurityUser = Session["SecurityUser"] as string; // (If you want to show Welcome message too)
+            return View(visitors);
         }
-        public ActionResult CameraScan()
-        {
-            if (Session["SecurityUser"] == null)
-                return RedirectToAction("Login");
+        //public ActionResult CameraScan()
+        //{
+        //    if (Session["SecurityUser"] == null)
+        //        return RedirectToAction("Login");
 
-            return View();
-        }
+        //    return View();
+        //}
+        [HttpPost]
         public ActionResult Logout()
         {
-            if (Session["SecurityUser"] == null)
-                return RedirectToAction("Login");
+            Session.Clear(); // Clear session on logout
+            return RedirectToAction("Login", "Security");
+        }
 
-            return View();
-        }
-        public ActionResult CheckIn()
-        {
-            return View();
-        }
         [HttpPost]
         public ActionResult CheckIn(int id)
         {
@@ -102,17 +102,15 @@ namespace Visitor_Management_System.Controllers
             if(visitor != null)
             {
                 visitor.Status = "CheckedIn";
-                if(dbo.SaveChanges() > 0)
+                visitor.CreatedAt = DateTime.Now;
+                if (dbo.SaveChanges() > 0)
                 {
                     TempData["Message"] = "Visitor successfully checked in.";
                 }
             }
-            return RedirectToAction("Scan", "Visitor", new { token = visitor.QRCodeToken });
+            return RedirectToAction("LatestVisitor");
         }
-        public ActionResult CheckOut()
-        {
-            return View();
-        }
+       
         [HttpPost]
         public ActionResult CheckOut(int id)
         {
@@ -120,33 +118,77 @@ namespace Visitor_Management_System.Controllers
             if(visitor != null)
             {
                 visitor.Status = "CheckedOut";
-                if(dbo.SaveChanges() > 0)
+                visitor.UpdatedAt = DateTime.Now;
+                if (dbo.SaveChanges() > 0)
                 {
                     TempData["Message"] = "Visitor successfully checked out.";
                 }
             }
-            return RedirectToAction("Scan", "Visitor", new { token = visitor.QRCodeToken });
+            return RedirectToAction("VisitorList");
         }
-        public ActionResult ShowVisitorPass()
-        {
-            return View();
-        }
+        
         [HttpPost]
-        public ActionResult ShowVisitorPass(int? visitorId)
+        public ActionResult VisitorComplete(int id)
+        {
+            var visitor = dbo.TblVisitors.Find(id);
+            if(visitor != null)
+            {
+                visitor.Status = "CheckedOut";
+                visitor.UpdatedAt = DateTime.Now;
+                if (dbo.SaveChanges() > 0)
+                {
+                    TempData["Message"] = "Visitor marked as completed.";
+                }
+            }
+            return RedirectToAction("Dashboard", "Security");
+        }
+        public ActionResult LatestVisitor(int? id)
         {
             if (Session["SecurityUser"] == null)
-                return RedirectToAction("Login", "Security");
+                return RedirectToAction("Login");
 
-            TblVisitor visitor;
-            if(visitorId.HasValue)
+            TblVisitor visitor = null;
+
+            if (id.HasValue)
             {
-                visitor = dbo.TblVisitors.FirstOrDefault(v => v.Id == visitorId.Value); 
+                visitor = dbo.TblVisitors.FirstOrDefault(v => v.Id == id.Value);
             }
             else
             {
-                visitor = dbo.TblVisitors.Where(v=>v.Status == "Pending" || v.Status == "CheckedIn").OrderByDescending(v=>v.CreatedAt).FirstOrDefault();
+                // Fallback: If no id provided, get latest Pending/CheckedIn visitor
+                visitor = dbo.TblVisitors
+                            .Where(v => v.Status == "Pending" || v.Status == "CheckedIn")
+                            .OrderByDescending(v => v.CreatedAt)
+                            .FirstOrDefault();
             }
-            return View("Scan", visitor);
+
+            if (visitor == null)
+            {
+                ViewBag.Message = "No visitor found.";
+                return View("VisitorPassWithActions");
+            }
+
+            return View("VisitorPassWithActions", visitor);
+        }
+        public ActionResult VisitorList()
+        {
+            if (Session["SecurityUser"] == null)
+                return RedirectToAction("Login");
+
+            var visitor = dbo.TblVisitors.OrderByDescending(v => v.CreatedAt).ToList();
+            return View(visitor);
+        }
+        [HttpPost]
+        public ActionResult DeleteVisitor(int id)
+        {
+            var visitor = dbo.TblVisitors.Find(id);
+            if (visitor != null)
+            {
+                dbo.TblVisitors.Remove(visitor);
+                dbo.SaveChanges();
+                TempData["Message"] = "Visitor deleted successfully.";
+            }
+            return RedirectToAction("Dashboard", "Security");
         }
     }
 }
