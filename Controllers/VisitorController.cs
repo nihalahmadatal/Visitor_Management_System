@@ -1,10 +1,11 @@
-﻿using QRCoder;
+using QRCoder;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Windows.Navigation;
 using Visitor_Management_System.Models;
 
 namespace Visitor_Management_System.Controllers
@@ -13,6 +14,20 @@ namespace Visitor_Management_System.Controllers
     {
         DB_VisitorEntities dbo = new DB_VisitorEntities();
         // GET: Visitor
+        public ActionResult ShowRegisterQR()
+        {
+            string registerUrl = "https://localhost:44337/Visitor/Register";
+
+            QRCodeGenerator qr = new QRCodeGenerator();
+            QRCodeData qrData = qr.CreateQrCode(registerUrl, QRCodeGenerator.ECCLevel.Q);
+            Base64QRCode qrCode = new Base64QRCode(qrData);
+            string qrCodeImage = qrCode.GetGraphic(20);
+
+            ViewBag.qrCodeImage = "data:image/png;base64," + qrCodeImage;
+
+            return View();
+        }
+        
         public ActionResult Register()
         {
             return View();
@@ -28,7 +43,7 @@ namespace Visitor_Management_System.Controllers
                 visitor.PhotoPath = "/VisitorPhotos/" + fileName;
             }
 
-            visitor.Status = "Approved";
+            visitor.Status = "Pending";
             visitor.QRCodeToken = Guid.NewGuid();
             visitor.CreatedAt = DateTime.Now;
             dbo.TblVisitors.Add(visitor);   
@@ -57,37 +72,15 @@ namespace Visitor_Management_System.Controllers
             }
 
         }
-        public ActionResult Scan(Guid token)
+
+        [HttpPost]
+        public ActionResult RedirectToSecurity(int id)
         {
-            var visitor = dbo.TblVisitors.FirstOrDefault(v => v.QRCodeToken == token);
+            // Store visitor ID temporarily (optional if you're passing it in query)
+            TempData["VisitorId"] = id;
 
-            if(visitor != null)
-            {
-                if (visitor.Status == "Approved")
-                    visitor.Status = "CheckedIn";
-                else if (visitor.Status == "CheckedIn")
-                    visitor.Status = "CheckedOut";
-
-                visitor.UpdatedAt = DateTime.Now;
-                if(dbo.SaveChanges() > 0)
-                {
-                    return View(visitor);
-                }
-            }
-            return HttpNotFound();
-
+            // Redirect to LatestVisitor on Security controller
+            return RedirectToAction("LatestVisitor", "Security", new { id = id });
         }
-        //public ActionResult VisitorPass(Guid token)
-        //{
-        //    // Look up the visitor by their QR token
-        //    var visitor = dbo.TblVisitors
-        //                    .FirstOrDefault(v => v.QRCodeToken == token);
-        //    if (visitor == null)
-        //        return HttpNotFound();
-
-        //    // Pass it to the view
-        //    return RedirectToAction("VisitorPass", new { token = visitor.QRCodeToken });
-        //}
-
     }
 }
