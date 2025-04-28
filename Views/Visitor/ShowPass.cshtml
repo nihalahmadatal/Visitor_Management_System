@@ -1,9 +1,23 @@
-﻿@model Visitor_Management_System.Models.TblVisitor
+@model Visitor_Management_System.Models.TblVisitor
 
 @{
     ViewBag.Title = "Visitor Pass";
     Layout = null;
-    string statusColor = Model.Status == "CheckedIn" ? "green" : Model.Status == "CheckedOut" ? "red" : "orange";
+
+    string statusColor = "orange";
+
+    if (Model.Status == "Pending")
+    {
+        statusColor = "orange";
+    }
+    else if (Model.Status == "CheckedIn")
+    {
+        statusColor = "green";
+    }
+    else if (Model.Status == "CheckedOut" || Model.Status == "Completed")
+    {
+        statusColor = "red";
+    }
 }
 
 <!DOCTYPE html>
@@ -79,24 +93,10 @@
             <img src="@Url.Action("GenerateQr", "Visitor", new { token = Model.QRCodeToken })" width="200" />
         </div>
 
-        @if (User.Identity.IsAuthenticated && Session["SecurityUser"] != null)
-        {
-            <div style="max-width: 400px; margin: 20px auto; text-align: center;">
-                @if (Model.Status == "Pending")
-                {
-                    <form method="post" action="@Url.Action("CheckIn", "Security", new { id = Model.Id })">
-                        <button type="submit" class="btn btn-checkin">✅ Check-In & Approve</button>
-                    </form>
-                }
-                else if (Model.Status == "CheckedIn")
-                {
-                    <form method="post" action="@Url.Action("CheckOut", "Security", new { id = Model.Id })">
-                        <button type="submit" class="btn btn-checkout">🚪 Check-Out</button>
-                    </form>
-                }
-            </div>
-        }
+        <!-- Button to forward to security -->
+        <form method="post" action="@Url.Action("RedirectToSecurity", "Visitor", new { id = Model.Id })">
+            <button type="submit" class="btn-forward">Check Pass to Security</button>
+        </form>
     </div>
-
 </body>
 </html>
